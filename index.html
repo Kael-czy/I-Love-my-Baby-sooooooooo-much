@@ -125,7 +125,7 @@ const CONFIG = {
   coverLine: "Life is strange....isnt it?",
 
   // Optional: your own song. Drop an mp3 in the repo and put its path here.
-  // Leave "" and the site generates its own ambient music instead.
+  // Leave "" and the site generates its own ambient music instead (now tuned warm/major instead of the old moody minor version).
   song: "",
 
   // The recap. Put the images in the photos/ folder, list them oldest → newest.
@@ -314,24 +314,25 @@ $('#stars').appendChild(f);})();
 
 /* ─────────── music ─────────── */
 let actx,bus,playing=false,step=0,tick=null,audioEl=null;
-const CHORDS=[[220,277.18,329.63,415.30],[184.99,220,277.18,329.63],[146.83,220,293.66,369.99],[164.81,207.65,246.94,329.63]];
-const BELLS=[659.25,554.37,493.88,440,369.99,329.63];
+// Warm major-key chords (Cmaj9 / Am9 / Fmaj7 / Gmaj) instead of the old moody minor voicings — softer, more romantic.
+const CHORDS=[[261.63,329.63,392.00,493.88],[220.00,261.63,329.63,440.00],[174.61,220.00,261.63,349.23],[196.00,246.94,293.66,392.00]];
+const BELLS=[523.25,493.88,440.00,392.00,349.23,329.63];
 function initAudio(){
   if(actx)return; actx=new (window.AudioContext||window.webkitAudioContext)();
-  bus=actx.createGain(); bus.gain.value=.24;
-  const dl=actx.createDelay(1.2); dl.delayTime.value=.42;
-  const fb=actx.createGain(); fb.gain.value=.32;
-  const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1600;
+  bus=actx.createGain(); bus.gain.value=.22;
+  const dl=actx.createDelay(1.2); dl.delayTime.value=.5;
+  const fb=actx.createGain(); fb.gain.value=.3;
+  const lp=actx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2000;
   bus.connect(lp); lp.connect(actx.destination); lp.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(actx.destination);
 }
 function pad(fs){const t=actx.currentTime;fs.forEach((f,i)=>{const o=actx.createOscillator(),g=actx.createGain();
-o.type=i%2?'sine':'triangle';o.frequency.value=f;o.detune.value=Math.random()*8-4;
-g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.13,t+2.4);g.gain.linearRampToValueAtTime(0,t+7.4);
-o.connect(g);g.connect(bus);o.start(t);o.stop(t+7.6);});}
+o.type=i%2?'sine':'triangle';o.frequency.value=f;o.detune.value=Math.random()*5-2.5;
+g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.115,t+3.2);g.gain.linearRampToValueAtTime(0,t+8.4);
+o.connect(g);g.connect(bus);o.start(t);o.stop(t+8.6);});}
 function bell(){const t=actx.currentTime+Math.random()*2.5;const o=actx.createOscillator(),g=actx.createGain();
 o.type='sine';o.frequency.value=BELLS[(Math.random()*BELLS.length)|0];
-g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.07,t+.05);g.gain.exponentialRampToValueAtTime(.0008,t+3.2);
-o.connect(g);g.connect(bus);o.start(t);o.stop(t+3.3);}
+g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.055,t+.08);g.gain.exponentialRampToValueAtTime(.0008,t+3.6);
+o.connect(g);g.connect(bus);o.start(t);o.stop(t+3.7);}
 function musicOn(){
   $('#musicBtn').classList.add('on'); $('#musicBtn').textContent='♪ music on'; playing=true;
   if(CONFIG.song){
@@ -341,7 +342,7 @@ function musicOn(){
   }
   initAudio(); if(actx.state==='suspended')actx.resume();
   const beat=()=>{pad(CHORDS[step%CHORDS.length]); if(step%2===0)bell(); step++;};
-  beat(); clearInterval(tick); tick=setInterval(beat,6800);
+  beat(); clearInterval(tick); tick=setInterval(beat,7400);
 }
 function musicOff(){playing=false;$('#musicBtn').textContent='♪ music off';clearInterval(tick);if(audioEl)audioEl.pause();if(actx)actx.suspend();}
 $('#musicBtn').onclick=()=>playing?musicOff():musicOn();
