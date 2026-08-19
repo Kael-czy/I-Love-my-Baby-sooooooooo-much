@@ -135,11 +135,14 @@ const CONFIG = {
     { src: "cutiepie.jpg", caption: "CUTIEEEEEEE PIEEEEEE" }
   ],
 
-  // The letter. Write it here. Line breaks work.
-  letter: `Write it here.
+  // The letters. Each of you gets your own box. Write here, or just start typing on the site.
+  letterHim: `Write it here.
 
 The specific things. The Tuesday things.
 Not the greeting-card things.`,
+  letterHer: `Your turn.
+
+Same rules — the specific things, not the greeting-card things.`,
 
   // Starting list. Both of you can add more from the site later.
   list: [
@@ -191,10 +194,21 @@ Not the greeting-card things.`,
 
 <section class="screen" id="letter">
   <div class="pad">
-    <div class="hdr"><p class="eyebrow">Read this on the plane</p><h2 id="ltTitle"></h2></div>
-    <div class="letter" id="ltBody" contenteditable="true" spellcheck="false"></div>
-    <div class="row"><button class="btn" id="ltSave">Save letter</button><span class="saved" id="ltSaved">Saved</span></div>
-    <p class="note">Editable by both of you. Add to it whenever.</p>
+    <div class="hdr"><p class="eyebrow">Read this on the plane</p><h2>Two letters, side by side.</h2>
+    <p>Each of you gets your own space. Write whenever, add whenever — it's still just for the two of you.</p></div>
+    <div class="cols">
+      <div>
+        <div class="colhead"><p class="eyebrow gold" style="margin:0" id="ltHimName">Him</p><span class="saved" id="ltSavedHim">Saved</span></div>
+        <div class="letter" id="ltBodyHim" contenteditable="true" spellcheck="false"></div>
+        <div class="row"><button class="btn" id="ltSaveHim">Save</button></div>
+      </div>
+      <div>
+        <div class="colhead"><p class="eyebrow gold" style="margin:0" id="ltHerName">Her</p><span class="saved" id="ltSavedHer">Saved</span></div>
+        <div class="letter" id="ltBodyHer" contenteditable="true" spellcheck="false"></div>
+        <div class="row"><button class="btn" id="ltSaveHer">Save</button></div>
+      </div>
+    </div>
+    <p class="note">Editable by both of you, independently. Add to yours whenever.</p>
   </div>
 </section>
 
@@ -349,7 +363,8 @@ $('#cvFrom').textContent=CONFIG.from;
 $('#cvTo').textContent=CONFIG.to;
 $('#cvLine').textContent=CONFIG.coverLine;
 $('#cvDate').textContent=CONFIG.date?new Date(CONFIG.date+'T12:00').toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}).toUpperCase():'DEPARTURE';
-$('#ltTitle').textContent=CONFIG.her+',';
+$('#ltHimName').textContent=CONFIG.him;
+$('#ltHerName').textContent=CONFIG.her;
 
 /* ─────────── recap ─────────── */
 let rIdx=-1,rTimer=null,flip=false;
@@ -375,20 +390,33 @@ function nextSlide(){
 $('#tapzone').onclick=()=>{clearInterval(rTimer);nextSlide();rTimer=setInterval(nextSlide,6000);};
 CONFIG.recap.forEach(r=>{const i=new Image();i.src=r.src;});
 
-/* ─────────── letter ─────────── */
-let letterRow=null;
-async function loadLetter(){
-  try{ const rows=await DB.all('letter'); letterRow=rows[rows.length-1]||null; }catch(e){}
-  $('#ltBody').innerText = letterRow?.caption ?? CONFIG.letter;
+/* ─────────── letters (two separate compartments) ─────────── */
+let letterRowHim=null, letterRowHer=null;
+function flashSaved(sel,text){ const el=$(sel); el.textContent=text||'Saved'; el.classList.add('on'); setTimeout(()=>el.classList.remove('on'),1800); }
+async function loadLetters(){
+  let rows=[];
+  try{ rows=await DB.all('letter'); }catch(e){}
+  const hisRows=rows.filter(r=>r.who===CONFIG.him), herRows=rows.filter(r=>r.who===CONFIG.her);
+  letterRowHim = hisRows[hisRows.length-1] || null;
+  letterRowHer = herRows[herRows.length-1] || null;
+  $('#ltBodyHim').innerText = letterRowHim?.caption ?? CONFIG.letterHim ?? '';
+  $('#ltBodyHer').innerText = letterRowHer?.caption ?? CONFIG.letterHer ?? '';
 }
-$('#ltSave').onclick=async()=>{
-  const text=$('#ltBody').innerText;
+$('#ltSaveHim').onclick=async()=>{
+  const text=$('#ltBodyHim').innerText;
   try{
-    if(letterRow) await DB.patch(letterRow.id,{caption:text});
-    else letterRow=await DB.add({kind:'letter',caption:text,who:CONFIG.him});
-    $('#ltSaved').textContent='Saved';
-  }catch(e){ $('#ltSaved').textContent='Save failed'; }
-  $('#ltSaved').classList.add('on'); setTimeout(()=>$('#ltSaved').classList.remove('on'),1800);
+    if(letterRowHim) await DB.patch(letterRowHim.id,{caption:text});
+    else letterRowHim=await DB.add({kind:'letter',caption:text,who:CONFIG.him});
+    flashSaved('#ltSavedHim');
+  }catch(e){ flashSaved('#ltSavedHim','Save failed'); }
+};
+$('#ltSaveHer').onclick=async()=>{
+  const text=$('#ltBodyHer').innerText;
+  try{
+    if(letterRowHer) await DB.patch(letterRowHer.id,{caption:text});
+    else letterRowHer=await DB.add({kind:'letter',caption:text,who:CONFIG.her});
+    flashSaved('#ltSavedHer');
+  }catch(e){ flashSaved('#ltSavedHer','Save failed'); }
 };
 
 /* ─────────── list ─────────── */
@@ -490,7 +518,7 @@ $('#vaultAdd').onclick=async()=>{
 $('#vaultNote').textContent = LIVE
   ? 'Photos get compressed before upload. Both of you see everything here, from anywhere.'
   : 'Heads up: no shared backend configured — anything added here saves only on this device and stays under 3 MB.';
-(async function(){ await loadLetter(); await loadList(); await loadVault(); })();
+(async function(){ await loadLetters(); await loadList(); await loadVault(); })();
 </script>
 </body>
 </html>
