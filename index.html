@@ -235,6 +235,22 @@ Same rules — the specific things, not the greeting-card things.`,
   </div>
 </section>
 
+<section class="screen" id="watch">
+  <div class="pad">
+    <div class="hdr"><p class="eyebrow">Movies &amp; anime</p><h2>The watchlist.</h2>
+    <p>Add whatever's next. Tap the box once it's watched.</p></div>
+    <div class="addrow">
+      <input type="text" id="wInput" placeholder="a title you want to watch" autocomplete="off">
+      <button class="chip" id="wTypeToggle" type="button">Movie</button>
+      <button class="btn" id="wAdd">Add</button>
+    </div>
+    <div class="cols">
+      <div><div class="colhead"><p class="eyebrow" style="margin:0">Want to watch</p><p class="eyebrow gold" style="margin:0" id="wTodoCount">0</p></div><div id="wColTodo"></div></div>
+      <div><div class="colhead"><p class="eyebrow" style="margin:0">Watched</p><p class="eyebrow gold" style="margin:0" id="wDoneCount">0</p></div><div id="wColDone"></div></div>
+    </div>
+  </div>
+</section>
+
 <div class="modal" id="capModal">
   <div class="sheet">
     <h3 id="capTitle">Say what this was</h3>
@@ -250,6 +266,7 @@ Same rules — the specific things, not the greeting-card things.`,
   <button data-go="letter">Letter</button>
   <button data-go="list">List</button>
   <button data-go="vault">Vault</button>
+  <button data-go="watch">Watch</button>
 </nav>
 
 <script>
@@ -457,6 +474,35 @@ async function addItem(text){
 $('#liAdd').onclick=()=>{addItem($('#liInput').value);$('#liInput').value='';};
 $('#liInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('#liAdd').click();});
 
+/* ─────────── watchlist ─────────── */
+let watchItems=[]; let wType='movie';
+async function loadWatch(){ try{ watchItems=await DB.all('watch'); }catch(e){ watchItems=[]; } renderWatch(); }
+function renderWatch(){
+  const todo=watchItems.filter(i=>!i.done), done=watchItems.filter(i=>i.done);
+  const row=i=>`<div class="item${i.done?' done':''}" data-id="${i.id}">
+    <button class="box${i.done?' on':''}" aria-label="toggle">${i.done?'✓':''}</button>
+    <span class="t"><span class="eyebrow gold" style="margin-right:8px">${esc((i.type||'movie').toUpperCase())}</span>${esc(i.caption)}</span><button class="del" aria-label="remove">×</button></div>`;
+  $('#wColTodo').innerHTML=todo.map(row).join('')||'<p class="note" style="margin-top:4px">Nothing queued yet.</p>';
+  $('#wColDone').innerHTML=done.map(row).join('')||'<p class="note" style="margin-top:4px">Nothing watched yet.</p>';
+  $('#wTodoCount').textContent=todo.length; $('#wDoneCount').textContent=done.length;
+  $$('#watch .item .box').forEach(b=>b.onclick=async()=>{
+    const id=b.closest('.item').dataset.id, it=watchItems.find(x=>String(x.id)===String(id));
+    it.done=!it.done; renderWatch(); try{await DB.patch(it.id,{done:it.done});}catch(e){}
+  });
+  $$('#watch .item .del').forEach(b=>b.onclick=async()=>{
+    const id=b.closest('.item').dataset.id;
+    watchItems=watchItems.filter(x=>String(x.id)!==String(id)); renderWatch(); try{await DB.remove(id);}catch(e){}
+  });
+}
+$('#wTypeToggle').onclick=()=>{ wType = wType==='movie' ? 'anime' : 'movie'; $('#wTypeToggle').textContent = wType==='movie'?'Movie':'Anime'; };
+async function addWatch(){
+  const text=$('#wInput').value.trim(); if(!text)return;
+  try{ watchItems.push(await DB.add({kind:'watch',caption:text,type:wType,done:false,who:CONFIG.him})); renderWatch(); $('#wInput').value=''; }
+  catch(e){ alert("Couldn't save that. Check the connection."); }
+}
+$('#wAdd').onclick=addWatch;
+$('#wInput').addEventListener('keydown',e=>{if(e.key==='Enter')addWatch();});
+
 /* ─────────── vault ─────────── */
 let vault=[];
 function pick(accept,multiple){return new Promise(res=>{const i=document.createElement('input');i.type='file';i.accept=accept;i.multiple=!!multiple;i.onchange=()=>res([...i.files]);i.click();});}
@@ -519,7 +565,7 @@ $('#vaultAdd').onclick=async()=>{
 $('#vaultNote').textContent = LIVE
   ? 'Photos get compressed before upload. Both of you see everything here, from anywhere.'
   : 'Heads up: no shared backend configured — anything added here saves only on this device and stays under 3 MB.';
-(async function(){ await loadLetters(); await loadList(); await loadVault(); })();
+(async function(){ await loadLetters(); await loadList(); await loadVault(); await loadWatch(); })();
 </script>
 </body>
 </html>
