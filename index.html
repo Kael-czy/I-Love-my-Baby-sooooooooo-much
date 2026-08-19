@@ -121,6 +121,14 @@ nav button.on{color:var(--gold);border-bottom-color:var(--gold)}
 .heartName span{font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(24px,7vw,38px);line-height:1.05;color:var(--cream);animation:glowText 2.6s ease-in-out infinite}
 @keyframes glowText{0%,100%{text-shadow:0 0 8px rgba(251,246,238,.55),0 0 18px rgba(255,51,85,.55),0 0 32px rgba(255,51,85,.35)}50%{text-shadow:0 0 18px rgba(251,246,238,.95),0 0 38px rgba(255,51,85,.95),0 0 66px rgba(255,51,85,.75)}}
 .heartNote{max-width:360px;margin-top:38px}
+nav{flex-wrap:wrap}
+.spWrap{max-width:400px;margin:26px auto 0;text-align:center}
+.spArt{width:220px;height:220px;border-radius:6px;object-fit:cover;margin:0 auto 20px;box-shadow:0 20px 60px rgba(0,0,0,.5);background:rgba(251,246,238,.05);display:none}
+.spTrackName{font-family:var(--display);font-style:italic;font-weight:300;font-size:22px;margin:0 0 4px}
+.spArtist{color:var(--muted);font-size:14px;margin:0 0 22px}
+.spControls{display:flex;gap:22px;align-items:center;justify-content:center;margin-bottom:18px}
+.spControls button{font-size:22px;color:var(--cream)}
+.spControls button.playPause{width:52px;height:52px;border-radius:50%;background:var(--gold);color:#14102A;display:flex;align-items:center;justify-content:center;font-size:18px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -172,9 +180,20 @@ Same rules — the specific things, not the greeting-card things.`,
   supabase: {
     url: "https://kpfrmbmkhzkpyzzvupaf.supabase.co",
     key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwZnJtYm1raHprcHl6enZ1cGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNjA3MTksImV4cCI6MjEwMjczNjcxOX0.w71_anP6WXIDXjmqH1OJFbbDcEaL_PFVdsGAkxwRn8c"
+  },
+
+  // Spotify. Connect once per device, then control it from either phone.
+  // clientId comes from developer.spotify.com/dashboard → your app → Settings.
+  // playlistUri (optional) — right-click a playlist in Spotify → Share → Copy Spotify URI, looks like spotify:playlist:xxxx.
+  // Needs Spotify Premium on whichever account connects, and the redirectUri below must exactly match what's set in the Spotify app's settings.
+  spotify: {
+    clientId: "16fff7217c29467baf71e27ef15ff194",
+    redirectUri: "https://kael-czy.github.io/I-Love-my-Baby-sooooooooo-much/",
+    playlistUri: ""
   }
 };
 </script>
+<script src="https://sdk.scdn.co/spotify-player.js"></script>
 
 <section class="screen on" id="cover">
   <div class="pass">
@@ -282,6 +301,16 @@ Same rules — the specific things, not the greeting-card things.`,
   </div>
 </section>
 
+<section class="screen" id="spotify">
+  <div class="pad">
+    <div class="hdr"><p class="eyebrow">Our soundtrack</p><h2>Whatever we're playing.</h2>
+    <p>Connect once. Needs Premium on whichever account logs in.</p></div>
+    <div class="spWrap" id="spWrap">
+      <button class="btn" id="spConnect">Connect Spotify</button>
+    </div>
+  </div>
+</section>
+
 <div class="modal" id="capModal">
   <div class="sheet">
     <h3 id="capTitle">Say what this was</h3>
@@ -299,6 +328,7 @@ Same rules — the specific things, not the greeting-card things.`,
   <button data-go="vault">Vault</button>
   <button data-go="watch">Watch</button>
   <button data-go="heart">❤</button>
+  <button data-go="spotify">Spotify</button>
 </nav>
 
 <script>
@@ -594,11 +624,123 @@ $('#vaultAdd').onclick=async()=>{
   $('#vaultBusy').style.display='none';
 };
 
+/* ─────────── spotify ─────────── */
+const SP_HAS = !!(CONFIG.spotify && CONFIG.spotify.clientId);
+let spPlayer=null, spDeviceId=null;
+function b64url(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function randString(len){ const a=new Uint8Array(len); crypto.getRandomValues(a); return b64url(a).slice(0,len); }
+async function pkcePair(){
+  const verifier=randString(64);
+  const digest=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return { verifier, challenge: b64url(digest) };
+}
+async function spotifyLogin(){
+  const {verifier,challenge}=await pkcePair();
+  localStorage.setItem('sp_verifier', verifier);
+  const params=new URLSearchParams({
+    client_id: CONFIG.spotify.clientId,
+    response_type: 'code',
+    redirect_uri: CONFIG.spotify.redirectUri,
+    scope: 'streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state',
+    code_challenge_method: 'S256',
+    code_challenge: challenge
+  });
+  location.href='https://accounts.spotify.com/authorize?'+params;
+}
+function saveSpTokens(tok){
+  localStorage.setItem('sp_access', tok.access_token);
+  if(tok.refresh_token) localStorage.setItem('sp_refresh', tok.refresh_token);
+  localStorage.setItem('sp_expires', String(Date.now()+(tok.expires_in*1000)));
+}
+async function handleSpotifyRedirect(){
+  const params=new URLSearchParams(location.search);
+  const code=params.get('code');
+  if(!code) return;
+  const verifier=localStorage.getItem('sp_verifier');
+  const body=new URLSearchParams({
+    client_id: CONFIG.spotify.clientId, grant_type:'authorization_code',
+    code, redirect_uri: CONFIG.spotify.redirectUri, code_verifier: verifier
+  });
+  try{
+    const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const tok=await r.json();
+    if(tok.access_token) saveSpTokens(tok);
+  }catch(e){}
+  history.replaceState({}, document.title, location.pathname);
+}
+async function getSpToken(){
+  const exp=+localStorage.getItem('sp_expires')||0;
+  if(Date.now()<exp-5000) return localStorage.getItem('sp_access');
+  const refresh=localStorage.getItem('sp_refresh');
+  if(!refresh) return null;
+  const body=new URLSearchParams({client_id:CONFIG.spotify.clientId,grant_type:'refresh_token',refresh_token:refresh});
+  try{
+    const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const tok=await r.json();
+    if(tok.access_token){ saveSpTokens({...tok, refresh_token: tok.refresh_token||refresh}); return tok.access_token; }
+  }catch(e){}
+  return null;
+}
+function renderSpotifyUI(connected){
+  if(!SP_HAS){ $('#spWrap').innerHTML='<p class="note">Spotify isn\'t connected yet.</p>'; return; }
+  if(!connected){
+    $('#spWrap').innerHTML='<button class="btn" id="spConnect">Connect Spotify</button><p class="note">Needs Spotify Premium on the account that connects.</p>';
+    $('#spConnect').onclick=spotifyLogin;
+    return;
+  }
+  $('#spWrap').innerHTML=`
+    <img class="spArt" id="spArt" alt="">
+    <p class="spTrackName" id="spTrackName">Not playing yet</p>
+    <p class="spArtist" id="spArtist"></p>
+    <div class="spControls">
+      <button id="spPrev" aria-label="previous">⏮</button>
+      <button class="playPause" id="spPlayPause" aria-label="play or pause">▶</button>
+      <button id="spNext" aria-label="next">⏭</button>
+    </div>
+    ${CONFIG.spotify.playlistUri?'<button class="btn ghost" id="spPlayPlaylist">Play our playlist</button>':''}
+    <p class="note">Connected. On your phone's Spotify app, tap the device icon and pick "Our Little App-ish" to hear it here — or use the button above.</p>
+  `;
+  $('#spPrev').onclick=()=>spPlayer&&spPlayer.previousTrack();
+  $('#spNext').onclick=()=>spPlayer&&spPlayer.nextTrack();
+  $('#spPlayPause').onclick=()=>spPlayer&&spPlayer.togglePlay();
+  if(CONFIG.spotify.playlistUri){
+    $('#spPlayPlaylist').onclick=async()=>{
+      const token=await getSpToken(); if(!token||!spDeviceId)return;
+      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${spDeviceId}`,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({context_uri:CONFIG.spotify.playlistUri})});
+    };
+  }
+}
+function renderSpotifyState(state){
+  if(!state||!$('#spTrackName'))return;
+  const track=state.track_window.current_track;
+  $('#spTrackName').textContent=track.name;
+  $('#spArtist').textContent=track.artists.map(a=>a.name).join(', ');
+  const art=track.album.images[0]&&track.album.images[0].url;
+  if(art){ $('#spArt').src=art; $('#spArt').style.display='block'; }
+  $('#spPlayPause').textContent=state.paused?'▶':'⏸';
+}
+window.onSpotifyWebPlaybackSDKReady=async()=>{
+  if(!SP_HAS)return;
+  const token=await getSpToken();
+  if(!token)return;
+  spPlayer=new Spotify.Player({
+    name:'Our Little App-ish',
+    getOAuthToken:cb=>getSpToken().then(cb),
+    volume:0.6
+  });
+  spPlayer.addListener('ready',({device_id})=>{ spDeviceId=device_id; renderSpotifyUI(true); });
+  spPlayer.addListener('player_state_changed', renderSpotifyState);
+  spPlayer.connect();
+};
+
 /* ─────────── boot ─────────── */
 $('#vaultNote').textContent = LIVE
   ? 'Photos get compressed before upload. You and I both see everything here, from anywhere.'
   : "Heads up: no shared backend yet — anything added here saves only on this device and stays under 3 MB.";
-(async function(){ await loadLetters(); await loadList(); await loadVault(); await loadWatch(); })();
+(async function(){
+  await loadLetters(); await loadList(); await loadVault(); await loadWatch();
+  if(SP_HAS){ await handleSpotifyRedirect(); const tok=await getSpToken(); renderSpotifyUI(!!tok); }
+})();
 </script>
 </body>
 </html>
