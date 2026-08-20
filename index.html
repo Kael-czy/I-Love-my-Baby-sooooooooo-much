@@ -51,9 +51,13 @@ label.f span{font-family:var(--util);text-transform:uppercase;letter-spacing:.2e
 .stub{padding:20px 22px 24px}
 .stub h2{font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(26px,7vw,36px);margin:0 0 8px;line-height:1.12}
 .stub p{color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 20px}
-nav{position:fixed;bottom:0;left:0;right:0;z-index:20;display:none;justify-content:center;gap:2px;padding:10px 8px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(11,8,24,.96),rgba(11,8,24,.72),transparent);backdrop-filter:blur(8px)}
-nav button{font-family:var(--util);text-transform:uppercase;letter-spacing:.16em;font-size:11px;color:var(--muted);padding:9px 11px;border-bottom:1px solid transparent}
-nav button.on{color:var(--gold);border-bottom-color:var(--gold)}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:20;display:none;flex-direction:column;align-items:center;gap:3px;padding:9px 8px calc(9px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(11,8,24,.97),rgba(11,8,24,.8),transparent);backdrop-filter:blur(8px)}
+.navGroups{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+.navGroups button{font-family:var(--util);text-transform:uppercase;letter-spacing:.2em;font-size:12px;color:var(--muted);padding:7px 15px;border-radius:100px;border:1px solid transparent}
+.navGroups button.on{color:#14102A;background:var(--gold)}
+.navTabs{display:flex;gap:3px;justify-content:center;flex-wrap:wrap}
+.navTabs button{font-family:var(--util);text-transform:uppercase;letter-spacing:.16em;font-size:11px;color:var(--muted);padding:6px 10px;border-bottom:1px solid transparent}
+.navTabs button.on{color:var(--gold);border-bottom-color:var(--gold)}
 #recap .pad{padding:0}
 .stage{position:relative;height:100dvh;width:100%;overflow:hidden;background:#0B0818}
 .layer{position:absolute;inset:0;opacity:0;transition:opacity 1.4s ease}
@@ -122,7 +126,6 @@ nav button.on{color:var(--gold);border-bottom-color:var(--gold)}
 .heartName span{font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(24px,7vw,38px);line-height:1.05;color:#C9A6FF;animation:glowText 2.6s ease-in-out infinite}
 @keyframes glowText{0%,100%{text-shadow:0 0 8px rgba(201,166,255,.55),0 0 18px rgba(159,108,255,.55),0 0 32px rgba(159,108,255,.35)}50%{text-shadow:0 0 18px rgba(201,166,255,.95),0 0 38px rgba(159,108,255,.95),0 0 66px rgba(159,108,255,.75)}}
 .heartNote{max-width:360px;margin-top:38px}
-nav{flex-wrap:wrap}
 .cdGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 10px;max-width:420px;margin:26px auto 0}
 .cdCell{background:rgba(251,246,238,.04);border:1px solid var(--line);border-radius:4px;padding:16px 6px}
 .cdNum{font-family:var(--display);font-style:italic;font-size:clamp(20px,5.6vw,30px);line-height:1;color:var(--gold)}
@@ -408,18 +411,13 @@ Same rules — the specific things, not the greeting-card things.`,
 <div class="modal" id="lightbox"><div id="lbInner"></div></div>
 
 <nav id="nav">
-  <button data-go="recap" class="on">Recap</button>
-  <button data-go="letter">Letter</button>
-  <button data-go="list">List</button>
-  <button data-go="vault">Vault</button>
-  <button data-go="watch">Watch</button>
-  <button data-go="heart">❤</button>
-  <button data-go="spotify">Spotify</button>
-  <button data-go="moveIn">Countdown</button>
-  <button data-go="together">Together</button>
-  <button data-go="reasons">Reasons</button>
-  <button data-go="voice">Voice</button>
-  <button data-go="firsts">Firsts</button>
+  <div class="navGroups" id="navGroups">
+    <button data-group="then">Then</button>
+    <button data-group="now">Now</button>
+    <button data-group="next">Next</button>
+    <button data-group="always">Always</button>
+  </div>
+  <div class="navTabs" id="navTabs"></div>
 </nav>
 
 <script>
@@ -533,15 +531,29 @@ function setMood(tabId){
 }
 
 /* ─────────── nav ─────────── */
+// Then = what already happened. Now = what we're saying today. Next = what's coming. Always = the constants.
+const GROUPS={
+  then:  [['recap','Recap'],['vault','Vault'],['firsts','Firsts']],
+  now:   [['letter','Letters'],['voice','Voice'],['reasons','Reasons'],['spotify','Spotify']],
+  next:  [['list','List'],['watch','Watch'],['moveIn','Countdown']],
+  always:[['together','Together'],['heart','❤']]
+};
+function groupOf(id){ return Object.keys(GROUPS).find(g=>GROUPS[g].some(t=>t[0]===id)) || 'then'; }
+function renderNav(activeId){
+  const g=groupOf(activeId);
+  $$('#navGroups button').forEach(b=>b.classList.toggle('on',b.dataset.group===g));
+  $('#navTabs').innerHTML=GROUPS[g].map(([id,label])=>`<button data-go="${id}"${id===activeId?' class="on"':''}>${label}</button>`).join('');
+  $$('#navTabs button').forEach(b=>b.onclick=()=>show(b.dataset.go));
+}
 function show(id){
   $$('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
-  $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===id));
+  renderNav(id);
   window.scrollTo(0,0);
   if(id==='recap')startRecap();
   if(id==='vault')renderVault();
   setMood(id);
 }
-$$('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.go));
+$$('#navGroups button').forEach(b=>b.onclick=()=>show(GROUPS[b.dataset.group][0][0]));
 $('#openBtn').onclick=()=>{musicOn();$('#nav').style.display='flex';show('recap');};
 
 /* ─────────── cover ─────────── */
