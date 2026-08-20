@@ -181,6 +181,22 @@ nav{position:fixed;bottom:0;left:0;right:0;z-index:20;display:none;flex-directio
 #reasons .pad{display:flex;flex-direction:column;align-items:center;text-align:center}
 .voiceGrid{display:flex;flex-direction:column;gap:12px;margin-top:20px;width:100%}
 .chip.on{background:var(--gold);color:#14102A;border-color:var(--gold)}
+#blocked{position:fixed;inset:0;z-index:200;background:var(--night);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+#blocked.on{display:flex}
+#blocked h2{font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(26px,7vw,36px);margin:0 0 10px}
+.devRow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(251,246,238,.06);flex-wrap:wrap}
+.devDot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:rgba(251,246,238,.22)}
+.devDot.live{background:#5BD98A;box-shadow:0 0 10px rgba(91,217,138,.8)}
+.devMeta{flex:1;min-width:150px}
+.devMeta .nm{font-size:15px;line-height:1.4}
+.devMeta .sub{font-family:var(--util);text-transform:uppercase;letter-spacing:.16em;font-size:10px;color:var(--muted);margin-top:3px}
+.devTag{font-family:var(--util);text-transform:uppercase;letter-spacing:.16em;font-size:10px;padding:3px 9px;border-radius:100px}
+.devTag.admin{background:rgba(240,180,41,.18);color:var(--gold)}
+.devTag.her{background:rgba(201,166,255,.18);color:#C9A6FF}
+.devTag.banned{background:rgba(255,51,85,.18);color:#FF6B85}
+.devBtn{font-family:var(--util);text-transform:uppercase;letter-spacing:.16em;font-size:10px;border:1px solid var(--line);border-radius:100px;padding:6px 12px;color:var(--muted)}
+.devBtn.danger{color:#FF6B85;border-color:rgba(255,51,85,.35)}
+.codeBox{background:rgba(251,246,238,.05);border:1px dashed var(--line);border-radius:4px;padding:14px;font-family:ui-monospace,Menlo,monospace;font-size:13px;word-break:break-all;margin-top:12px}
 .voiceCard .vHead{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .voiceCard .del{margin-left:auto}
 .voiceCard{background:rgba(251,246,238,.04);border:1px solid var(--line);border-radius:3px;padding:14px 16px}
@@ -463,6 +479,22 @@ Same rules — the specific things, not the greeting-card things.`,
   </div>
 </section>
 
+<section class="screen" id="admin">
+  <div class="pad">
+    <div class="hdr"><p class="eyebrow">Yours only</p><h2>Who's here.</h2>
+    <p>Every browser that has opened this page. Green means they're on it right now.</p></div>
+    <div class="row" style="margin-top:14px"><span class="busy" id="adLive">—</span></div>
+    <div id="adList" style="margin-top:6px"></div>
+    <p class="note">Banning takes effect on their next check, within about half a minute. It sticks to that browser for good — unless they clear their storage or open it somewhere new, in which case they show up here again as a fresh device and you can ban that too.</p>
+    <div style="margin-top:26px">
+      <p class="eyebrow">Recovery code</p>
+      <p class="note" style="margin-top:6px">Keep this. It's how you get admin back if you clear this browser or switch phones. Long-press the wax seal on the opening screen to enter it.</p>
+      <div class="codeBox" id="adCode">—</div>
+      <div class="row"><button class="btn ghost" id="adCopy">Copy it</button></div>
+    </div>
+  </div>
+</section>
+
 <div class="modal" id="capModal">
   <div class="sheet">
     <h3 id="capTitle">Say what this was</h3>
@@ -482,6 +514,12 @@ Same rules — the specific things, not the greeting-card things.`,
   </div>
   <div class="navTabs" id="navTabs"></div>
 </nav>
+
+<div id="blocked">
+  <p class="eyebrow">Private</p>
+  <h2>This one isn't for you.</h2>
+  <p class="note" style="max-width:340px">This page belongs to two people, and you're not one of them.</p>
+</div>
 
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -1241,6 +1279,150 @@ $('#flAdd').onclick=async()=>{
 };
 $('#flInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('#flAdd').click();});
 
+/* ─────────── who's here, and who isn't welcome ───────────
+   Identity is per-browser, not per-person: each browser mints a random device id and keeps it in
+   localStorage. Presence is that device touching its own row every 25s. Bans are enforced by the
+   page checking its own status on the same tick.
+   Worth being straight about the limits: this is a public URL and the checks run in the browser,
+   so it reliably stops a curious friend or a forwarded link — it would not stop someone who knows
+   how to open devtools. Real airtightness needs proper auth and locked-down database policies. */
+const DEV_KEY='ly:device', ADMIN_KEY='ly:adminToken';
+let myDevice=null, adminToken=null, adminRow=null, devices=[], presenceTimer=null;
+
+function deviceId(){
+  let id=localStorage.getItem(DEV_KEY);
+  if(!id){ id=uid()+uid(); localStorage.setItem(DEV_KEY,id); }
+  return id;
+}
+function deviceLabel(){
+  const ua=navigator.userAgent;
+  const os = /Android/i.test(ua)?'Android' : /iPhone|iPad|iPod/i.test(ua)?'iPhone' :
+             /Windows/i.test(ua)?'Windows' : /Mac OS X/i.test(ua)?'Mac' : /Linux/i.test(ua)?'Linux' : 'Unknown';
+  const br = /Edg\//i.test(ua)?'Edge' : /OPR\//i.test(ua)?'Opera' : /SamsungBrowser/i.test(ua)?'Samsung' :
+             /Chrome\//i.test(ua)?'Chrome' : /Safari\//i.test(ua)?'Safari' : /Firefox\//i.test(ua)?'Firefox' : 'Browser';
+  return br+' on '+os;
+}
+function devMeta(row){ try{ return JSON.parse(row.caption||'{}'); }catch(e){ return {}; } }
+const isLive = row => { const m=devMeta(row); return m.seen && (Date.now()-new Date(m.seen).getTime() < 70000); };
+
+async function touchPresence(){
+  if(!myDevice)return;
+  const meta={label:deviceLabel(), seen:new Date().toISOString()};
+  try{
+    await DB.patch(myDevice.id,{caption:JSON.stringify(meta), who:(localStorage.getItem('ly:who')||myDevice.who||'')});
+    myDevice.caption=JSON.stringify(meta);
+  }catch(e){}
+  // has anyone barred this browser since the last tick?
+  try{
+    const rows=await DB.all('device');
+    const mine=rows.find(r=>r.url===deviceId());
+    if(mine){ myDevice=mine; if(mine.type==='banned') lockOut(); }
+    devices=rows;
+    if(isAdmin()) renderAdmin();
+  }catch(e){}
+}
+function lockOut(){
+  clearInterval(presenceTimer);
+  $('#blocked').classList.add('on');
+  $$('.screen').forEach(s=>s.classList.remove('on'));
+  $('#nav').style.display='none';
+  try{ musicOff(); }catch(e){}
+}
+function isAdmin(){ return !!(adminToken && localStorage.getItem(ADMIN_KEY)===adminToken); }
+
+async function initPresence(){
+  if(!LIVE) return;                       // nothing to enforce without the shared backend
+  const id=deviceId();
+  let rows=[];
+  try{ rows=await DB.all('device'); }catch(e){ return; }
+  devices=rows;
+  myDevice=rows.find(r=>r.url===id);
+  if(!myDevice){
+    try{
+      myDevice=await DB.add({kind:'device', url:id, type:'new',
+        caption:JSON.stringify({label:deviceLabel(), seen:new Date().toISOString()}),
+        who:localStorage.getItem('ly:who')||''});
+      devices.push(myDevice);
+    }catch(e){ return; }
+  }
+  if(myDevice.type==='banned'){ lockOut(); return; }
+
+  // admin token lives in the database; the first device ever to open the page claims it
+  try{
+    const settings=await DB.all('settings');
+    adminRow=settings.find(r=>r.caption==='adminToken');
+    if(!adminRow){
+      const tok=uid()+uid()+uid();
+      adminRow=await DB.add({kind:'settings',caption:'adminToken',url:tok});
+      localStorage.setItem(ADMIN_KEY,tok);
+      await DB.patch(myDevice.id,{type:'admin'}); myDevice.type='admin';
+    }
+    adminToken=adminRow.url;
+  }catch(e){}
+
+  applyAdminNav();
+  presenceTimer=setInterval(touchPresence,25000);
+  touchPresence();
+  addEventListener('beforeunload',()=>{ try{ navigator.sendBeacon && 0; }catch(e){} });
+}
+function applyAdminNav(){
+  const has=GROUPS.always.some(t=>t[0]==='admin');
+  if(isAdmin() && !has) GROUPS.always.push(['admin','Who’s here']);
+  if(!isAdmin() && has) GROUPS.always=GROUPS.always.filter(t=>t[0]!=='admin');
+  renderNav($$('.screen.on')[0]?.id || 'recap');
+}
+function renderAdmin(){
+  const el=$('#adList'); if(!el)return;
+  const live=devices.filter(isLive).length;
+  $('#adLive').textContent = live===1 ? '1 device on the page right now' : live+' devices on the page right now';
+  $('#adCode').textContent = adminToken || '—';
+  const sorted=[...devices].sort((a,b)=>(isLive(b)?1:0)-(isLive(a)?1:0));
+  el.innerHTML = sorted.map(d=>{
+    const m=devMeta(d), me=d.url===deviceId();
+    const tag = d.type==='admin'?'<span class="devTag admin">You</span>'
+              : d.type==='her'?'<span class="devTag her">Her</span>'
+              : d.type==='banned'?'<span class="devTag banned">Banned</span>':'';
+    const seen = m.seen ? (isLive(d)?'here now':'last seen '+new Date(m.seen).toLocaleString()) : 'never';
+    return `<div class="devRow" data-id="${d.id}">
+      <span class="devDot${isLive(d)?' live':''}"></span>
+      <div class="devMeta"><div class="nm">${esc(m.label||'Unknown device')}${d.who?' · '+esc(d.who):''}${me?' · this one':''}</div>
+      <div class="sub">${esc(seen)}</div></div>
+      ${tag}
+      ${d.type!=='admin'?`<button class="devBtn" data-act="her">Mark as her</button>`:''}
+      ${d.type!=='admin'?(d.type==='banned'?`<button class="devBtn" data-act="unban">Let back in</button>`:`<button class="devBtn danger" data-act="ban">Kick out</button>`):''}
+    </div>`;
+  }).join('') || '<p class="note">No devices yet.</p>';
+  el.querySelectorAll('.devBtn').forEach(b=>b.onclick=async()=>{
+    const row=b.closest('.devRow'), id=row.dataset.id, act=b.dataset.act;
+    const d=devices.find(x=>String(x.id)===String(id)); if(!d)return;
+    const next = act==='ban'?'banned' : act==='unban'?'seen' : 'her';
+    if(act==='ban' && !confirm('Kick this device out for good?'))return;
+    d.type=next; renderAdmin();
+    try{ await DB.patch(id,{type:next}); }catch(e){}
+  });
+}
+$('#adCopy').onclick=()=>{
+  if(!adminToken)return;
+  navigator.clipboard.writeText(adminToken).then(()=>{ $('#adCopy').textContent='Copied'; setTimeout(()=>$('#adCopy').textContent='Copy it',1600); }).catch(()=>{});
+};
+/* long-press the wax seal to put the recovery code in on a new device */
+(function(){
+  const seal=$('.envSeal'); if(!seal)return;
+  let t=null;
+  const start=()=>{ t=setTimeout(async()=>{
+    const code=prompt('Recovery code');
+    if(!code)return;
+    if(adminToken && code.trim()===adminToken){
+      localStorage.setItem(ADMIN_KEY,adminToken);
+      if(myDevice){ try{ await DB.patch(myDevice.id,{type:'admin'}); myDevice.type='admin'; }catch(e){} }
+      applyAdminNav(); alert('This device is the admin now.');
+    } else alert('That code is not it.');
+  },1400); };
+  const stop=()=>clearTimeout(t);
+  ['mousedown','touchstart'].forEach(e=>seal.addEventListener(e,start,{passive:true}));
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(e=>seal.addEventListener(e,stop,{passive:true}));
+})();
+
 /* ─────────── boot ─────────── */
 $('#vaultNote').textContent = LIVE
   ? 'Photos get compressed before upload. You and I both see everything here, from anywhere.'
@@ -1249,6 +1431,7 @@ $('#vaultNote').textContent = LIVE
   await loadLetters(); await loadList(); await loadVault(); await loadWatch();
   await loadMoveIn(); renderTogether();
   await loadReasons(); await loadVoice(); await loadFirsts();
+  await initPresence();
   if(SP_HAS){ await handleSpotifyRedirect(); const tok=await getSpToken(); renderSpotifyUI(!!tok); }
 })();
 </script>
