@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>A boarding pass, of sorts</title>
+<title>Our App for stuff baee</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,500;1,6..72,300;1,6..72,400&family=Barlow+Condensed:wght@400;500;600&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
@@ -110,18 +110,41 @@ nav button.on{color:var(--gold);border-bottom-color:var(--gold)}
 .heartStatement{max-width:380px;text-align:center}
 @media(min-width:720px){.heartStatement{text-align:left}}
 .heartStatement p{font-family:var(--display);font-style:normal;font-weight:500;font-size:clamp(24px,5.6vw,38px);line-height:1.3;color:var(--cream);margin:0;text-shadow:0 0 26px rgba(255,51,85,.35)}
-.heartStage{position:relative;width:min(80vw,340px);height:min(80vw,340px);margin-top:30px;flex:0 0 auto}
-@media(min-width:720px){.heartStage{margin-top:0}}
+.heartCol{display:flex;flex-direction:column;align-items:center;gap:20px;margin-top:30px}
+@media(min-width:720px){.heartCol{margin-top:0}}
+.heartStage{position:relative;width:min(80vw,340px);height:min(80vw,340px);flex:0 0 auto}
 .heartShape{position:absolute;inset:0;transform:rotate(-45deg);background:#FF3355;box-shadow:0 0 90px rgba(255,51,85,.55),0 0 160px rgba(255,51,85,.32);animation:heartbeat 1.15s ease-in-out infinite}
 .heartShape::before,.heartShape::after{content:"";position:absolute;width:100%;height:100%;border-radius:50%;background:inherit}
 .heartShape::before{top:-50%;left:0}
 .heartShape::after{top:0;left:50%}
 @keyframes heartbeat{0%,28%,100%{transform:rotate(-45deg) scale(1)}14%{transform:rotate(-45deg) scale(1.18)}42%{transform:rotate(-45deg) scale(1.1)}56%{transform:rotate(-45deg) scale(1)}}
-.heartName{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 18%;text-align:center}
-.heartName span{font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(24px,7vw,38px);line-height:1.05;color:var(--cream);animation:glowText 2.6s ease-in-out infinite}
-@keyframes glowText{0%,100%{text-shadow:0 0 8px rgba(251,246,238,.55),0 0 18px rgba(255,51,85,.55),0 0 32px rgba(255,51,85,.35)}50%{text-shadow:0 0 18px rgba(251,246,238,.95),0 0 38px rgba(255,51,85,.95),0 0 66px rgba(255,51,85,.75)}}
+.heartName{text-align:center;padding:0 10px}
+.heartName span{font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(24px,7vw,38px);line-height:1.05;color:#C9A6FF;animation:glowText 2.6s ease-in-out infinite}
+@keyframes glowText{0%,100%{text-shadow:0 0 8px rgba(201,166,255,.55),0 0 18px rgba(159,108,255,.55),0 0 32px rgba(159,108,255,.35)}50%{text-shadow:0 0 18px rgba(201,166,255,.95),0 0 38px rgba(159,108,255,.95),0 0 66px rgba(159,108,255,.75)}}
 .heartNote{max-width:360px;margin-top:38px}
 nav{flex-wrap:wrap}
+.cdGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 10px;max-width:420px;margin:26px auto 0}
+.cdCell{background:rgba(251,246,238,.04);border:1px solid var(--line);border-radius:4px;padding:16px 6px}
+.cdNum{font-family:var(--display);font-style:italic;font-size:clamp(20px,5.6vw,30px);line-height:1;color:var(--gold)}
+.cdLabel{font-family:var(--util);text-transform:uppercase;letter-spacing:.16em;font-size:10px;color:var(--muted);margin-top:6px}
+.cdEdit{margin-top:26px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
+.cdEdit input[type=datetime-local]{background:rgba(251,246,238,.04);border:1px solid var(--line);border-radius:2px;padding:11px 12px;color:var(--cream);font-family:var(--body);font-size:14px}
+#moveIn .pad,#together .pad{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;text-align:center;padding-bottom:60px}
+.jarCard{max-width:420px;width:100%;background:linear-gradient(170deg,rgba(251,246,238,.06),rgba(251,246,238,.02));border:1px solid var(--line);border-radius:4px;padding:30px 26px;margin-top:24px;min-height:120px;display:flex;align-items:center;justify-content:center}
+.jarCard p{font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(18px,4.6vw,24px);line-height:1.5;margin:0}
+.jarRow{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;justify-content:center}
+.jarAddRow{display:flex;gap:8px;margin-top:34px;width:100%;max-width:420px}
+.jarAddRow input{flex:1}
+#reasons .pad{display:flex;flex-direction:column;align-items:center;text-align:center}
+.voiceGrid{display:flex;flex-direction:column;gap:12px;margin-top:20px;width:100%}
+.voiceCard{background:rgba(251,246,238,.04);border:1px solid var(--line);border-radius:3px;padding:14px 16px}
+.voiceCard .who{font-family:var(--util);text-transform:uppercase;letter-spacing:.16em;font-size:10px;color:var(--gold);margin-bottom:8px}
+.voiceCard audio{width:100%}
+.recDot{width:9px;height:9px;border-radius:50%;background:#FF3355;display:inline-block;margin-right:8px;animation:heartbeat 1s ease-in-out infinite}
+.flTag{font-family:var(--util);text-transform:uppercase;letter-spacing:.16em;font-size:10px;padding:3px 8px;border-radius:100px;margin-right:10px;flex:0 0 auto}
+.flTag.first{background:rgba(240,180,41,.18);color:var(--gold)}
+.flTag.last{background:rgba(255,51,85,.18);color:#FF6B85}
+.flRow{display:flex;align-items:flex-start;gap:0;padding:10px 0;border-bottom:1px solid rgba(251,246,238,.06)}
 .spWrap{max-width:400px;margin:26px auto 0;text-align:center}
 .spArt{width:220px;height:220px;border-radius:6px;object-fit:cover;margin:0 auto 20px;box-shadow:0 20px 60px rgba(0,0,0,.5);background:rgba(251,246,238,.05);display:none}
 .spTrackName{font-family:var(--display);font-style:italic;font-weight:300;font-size:22px;margin:0 0 4px}
@@ -190,7 +213,14 @@ Same rules — the specific things, not the greeting-card things.`,
     clientId: "16fff7217c29467baf71e27ef15ff194",
     redirectUri: "https://kael-czy.github.io/I-Love-my-Baby-sooooooooo-much/",
     playlistUri: ""
-  }
+  },
+
+  // Just a guess (4.5 years out) since the real move-in date isn't set yet.
+  // Editable live from the Countdown tab — whoever changes it there updates it for both of you.
+  moveInGuess: "2031-02-20T00:00:00",
+
+  // The exact moment. Fixed, not editable from the site — edit here if it's ever wrong.
+  togetherSince: "2026-01-30T14:00:00"
 };
 </script>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
@@ -291,9 +321,11 @@ Same rules — the specific things, not the greeting-card things.`,
   <div class="pad">
     <p class="eyebrow">No function. Just this.</p>
     <div class="heartRow">
-      <div class="heartStage">
-        <div class="heartShape"></div>
+      <div class="heartCol">
         <div class="heartName"><span id="heartNameText">Azanizzzzz</span></div>
+        <div class="heartStage">
+          <div class="heartShape"></div>
+        </div>
       </div>
       <div class="heartStatement"><p>How my heart beats for you....<br>you'll forever stay here.</p></div>
     </div>
@@ -308,6 +340,60 @@ Same rules — the specific things, not the greeting-card things.`,
     <div class="spWrap" id="spWrap">
       <button class="btn" id="spConnect">Connect Spotify</button>
     </div>
+  </div>
+</section>
+
+<section class="screen" id="moveIn">
+  <div class="pad">
+    <p class="eyebrow">Not soon enough</p>
+    <h2 style="font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(26px,7vw,36px);margin:6px 0 0">Until we move in together.</h2>
+    <div class="cdGrid" id="miGrid"></div>
+    <p class="note" style="margin-top:22px;max-width:360px">Just a guess — nobody knows the real date yet. Change it whenever, it saves for both of us.</p>
+    <div class="cdEdit">
+      <input type="datetime-local" id="miInput">
+      <button class="btn ghost" id="miSave">Save date</button>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="together">
+  <div class="pad">
+    <p class="eyebrow">Since january 30th, 2026, 2pm</p>
+    <h2 style="font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(26px,7vw,36px);margin:6px 0 0">However long it's been.</h2>
+    <div class="cdGrid" id="tsGrid"></div>
+  </div>
+</section>
+
+<section class="screen" id="reasons">
+  <div class="pad">
+    <p class="eyebrow">The jar</p>
+    <h2 style="font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(26px,7vw,36px);margin:6px 0 0">Reasons, unsorted.</h2>
+    <div class="jarCard" id="jarCard"><p id="jarText">Add the first one.</p></div>
+    <div class="jarRow"><button class="btn ghost" id="jarShake">Pull another</button></div>
+    <div class="jarAddRow"><input type="text" id="jarInput" placeholder="a reason, any reason" autocomplete="off"><button class="btn" id="jarSubmit">Drop it in</button></div>
+    <p class="note" id="jarCount"></p>
+  </div>
+</section>
+
+<section class="screen" id="voice">
+  <div class="pad">
+    <div class="hdr"><p class="eyebrow">Say it out loud</p><h2>Voice notes.</h2>
+    <p>Sometimes typing isn't it. Record something instead.</p></div>
+    <div class="row" style="margin-top:16px"><button class="btn" id="vnRecord">● Record a note</button><span class="busy" id="vnBusy" style="display:none">Uploading…</span></div>
+    <div class="voiceGrid" id="voiceGrid"></div>
+  </div>
+</section>
+
+<section class="screen" id="firsts">
+  <div class="pad">
+    <div class="hdr"><p class="eyebrow">The small stuff</p><h2>Firsts &amp; lasts.</h2>
+    <p>No structure. Just the moments worth marking.</p></div>
+    <div class="addrow">
+      <input type="text" id="flInput" placeholder="first time I knew..." autocomplete="off">
+      <button class="chip" id="flTypeToggle" type="button">First</button>
+      <button class="btn" id="flAdd">Add</button>
+    </div>
+    <div id="flList" style="margin-top:20px"></div>
   </div>
 </section>
 
@@ -329,6 +415,11 @@ Same rules — the specific things, not the greeting-card things.`,
   <button data-go="watch">Watch</button>
   <button data-go="heart">❤</button>
   <button data-go="spotify">Spotify</button>
+  <button data-go="moveIn">Countdown</button>
+  <button data-go="together">Together</button>
+  <button data-go="reasons">Reasons</button>
+  <button data-go="voice">Voice</button>
+  <button data-go="firsts">Firsts</button>
 </nav>
 
 <script>
@@ -393,8 +484,13 @@ $('#stars').appendChild(f);})();
 
 /* ─────────── music ─────────── */
 let actx,bus,playing=false,step=0,tick=null,audioEl=null;
-// Warm major-key chords (Cmaj9 / Am9 / Fmaj7 / Gmaj) instead of the old moody minor voicings — softer, more romantic.
-const CHORDS=[[261.63,329.63,392.00,493.88],[220.00,261.63,329.63,440.00],[174.61,220.00,261.63,349.23],[196.00,246.94,293.66,392.00]];
+// Three moods, swapped depending which tab is open — same instrument, different voicing per corner of the site.
+const CHORDS_WARM=[[261.63,329.63,392.00,493.88],[220.00,261.63,329.63,440.00],[174.61,220.00,261.63,349.23],[196.00,246.94,293.66,392.00]];
+const CHORDS_INTIMATE=[[196.00,246.94,293.66,349.23],[174.61,220.00,261.63,329.63],[164.81,207.65,246.94,311.13],[220.00,261.63,329.63,392.00]];
+const CHORDS_AIRY=[[293.66,369.99,440.00,587.33],[329.63,415.30,493.88,659.25],[349.23,440.00,523.25,698.46],[392.00,493.88,587.33,783.99]];
+const PALETTES={warm:CHORDS_WARM,intimate:CHORDS_INTIMATE,airy:CHORDS_AIRY};
+const TAB_MOOD={recap:'warm',watch:'warm',list:'warm',moveIn:'warm',together:'warm',letter:'intimate',heart:'intimate',reasons:'intimate',voice:'intimate',vault:'airy',firsts:'airy',spotify:'airy'};
+let currentMood='warm';
 const BELLS=[523.25,493.88,440.00,392.00,349.23,329.63];
 function initAudio(){
   if(actx)return; actx=new (window.AudioContext||window.webkitAudioContext)();
@@ -412,6 +508,11 @@ function bell(){const t=actx.currentTime+Math.random()*2.5;const o=actx.createOs
 o.type='sine';o.frequency.value=BELLS[(Math.random()*BELLS.length)|0];
 g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.055,t+.08);g.gain.exponentialRampToValueAtTime(.0008,t+3.6);
 o.connect(g);g.connect(bus);o.start(t);o.stop(t+3.7);}
+function startBeatLoop(){
+  clearInterval(tick);
+  const beat=()=>{ const set=PALETTES[currentMood]; pad(set[step%set.length]); if(step%2===0)bell(); step++; };
+  beat(); tick=setInterval(beat,7400);
+}
 function musicOn(){
   $('#musicBtn').classList.add('on'); $('#musicBtn').textContent='♪ music on'; playing=true;
   if(CONFIG.song){
@@ -420,11 +521,16 @@ function musicOn(){
     return;
   }
   initAudio(); if(actx.state==='suspended')actx.resume();
-  const beat=()=>{pad(CHORDS[step%CHORDS.length]); if(step%2===0)bell(); step++;};
-  beat(); clearInterval(tick); tick=setInterval(beat,7400);
+  startBeatLoop();
 }
 function musicOff(){playing=false;$('#musicBtn').textContent='♪ music off';clearInterval(tick);if(audioEl)audioEl.pause();if(actx)actx.suspend();}
 $('#musicBtn').onclick=()=>playing?musicOff():musicOn();
+function setMood(tabId){
+  const mood=TAB_MOOD[tabId]||'warm';
+  if(mood===currentMood)return;
+  currentMood=mood;
+  if(playing && !CONFIG.song) startBeatLoop();
+}
 
 /* ─────────── nav ─────────── */
 function show(id){
@@ -433,6 +539,7 @@ function show(id){
   window.scrollTo(0,0);
   if(id==='recap')startRecap();
   if(id==='vault')renderVault();
+  setMood(id);
 }
 $$('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.go));
 $('#openBtn').onclick=()=>{musicOn();$('#nav').style.display='flex';show('recap');};
@@ -733,12 +840,140 @@ window.onSpotifyWebPlaybackSDKReady=async()=>{
   spPlayer.connect();
 };
 
+/* ─────────── move-in countdown ─────────── */
+let miTarget=CONFIG.moveInGuess, miRow=null;
+async function loadMoveIn(){
+  try{
+    const rows=await DB.all('settings');
+    const row=rows.find(r=>r.caption==='moveInDate');
+    if(row){ miRow=row; miTarget=row.url; }
+  }catch(e){}
+  if($('#miInput')) $('#miInput').value = miTarget ? miTarget.slice(0,16) : '';
+  renderMoveIn();
+}
+function renderMoveIn(){
+  const el=$('#miGrid'); if(!el)return;
+  const target=new Date(miTarget).getTime();
+  let diff=Math.max(0,target-Date.now());
+  const d=Math.floor(diff/86400000); diff-=d*86400000;
+  const h=Math.floor(diff/3600000); diff-=h*3600000;
+  const m=Math.floor(diff/60000); diff-=m*60000;
+  const s=Math.floor(diff/1000);
+  el.innerHTML=[[d,'Days'],[h,'Hours'],[m,'Min'],[s,'Sec']].map(([v,l])=>`<div class="cdCell"><div class="cdNum">${v}</div><div class="cdLabel">${l}</div></div>`).join('');
+}
+$('#miSave').onclick=async()=>{
+  const v=$('#miInput').value; if(!v)return;
+  miTarget=new Date(v).toISOString();
+  try{
+    if(miRow) await DB.patch(miRow.id,{url:miTarget});
+    else miRow=await DB.add({kind:'settings',caption:'moveInDate',url:miTarget});
+  }catch(e){}
+  renderMoveIn();
+};
+setInterval(renderMoveIn,1000);
+
+/* ─────────── together-since count-up ─────────── */
+function elapsedBreakdown(from,to){
+  let y=to.getFullYear()-from.getFullYear();
+  let mo=to.getMonth()-from.getMonth();
+  let d=to.getDate()-from.getDate();
+  let h=to.getHours()-from.getHours();
+  let mi=to.getMinutes()-from.getMinutes();
+  let s=to.getSeconds()-from.getSeconds();
+  if(s<0){s+=60;mi--;}
+  if(mi<0){mi+=60;h--;}
+  if(h<0){h+=24;d--;}
+  if(d<0){ const pm=new Date(to.getFullYear(),to.getMonth(),0).getDate(); d+=pm; mo--; }
+  if(mo<0){mo+=12;y--;}
+  const w=Math.floor(d/7); d=d%7;
+  return {y,mo,w,d,h,mi,s};
+}
+function renderTogether(){
+  const el=$('#tsGrid'); if(!el)return;
+  const b=elapsedBreakdown(new Date(CONFIG.togetherSince), new Date());
+  el.innerHTML=[[b.y,'Years'],[b.mo,'Months'],[b.w,'Weeks'],[b.d,'Days'],[b.h,'Hours'],[b.mi,'Min'],[b.s,'Sec']].map(([v,l])=>`<div class="cdCell"><div class="cdNum">${v}</div><div class="cdLabel">${l}</div></div>`).join('');
+}
+setInterval(renderTogether,1000);
+
+/* ─────────── reasons jar ─────────── */
+let reasons=[];
+async function loadReasons(){ try{ reasons=await DB.all('reason'); }catch(e){ reasons=[]; } renderJarCount(); shakeJar(); }
+function renderJarCount(){ if($('#jarCount')) $('#jarCount').textContent = reasons.length ? `${reasons.length} in the jar so far.` : 'Empty. Be the first.'; }
+function shakeJar(){
+  if(!$('#jarText'))return;
+  if(!reasons.length){ $('#jarText').textContent='Nothing in here yet — add one below.'; return; }
+  const r=reasons[Math.floor(Math.random()*reasons.length)];
+  $('#jarText').textContent=r.caption;
+}
+$('#jarShake').onclick=shakeJar;
+$('#jarSubmit').onclick=async()=>{
+  const text=$('#jarInput').value.trim(); if(!text)return;
+  try{ reasons.push(await DB.add({kind:'reason',caption:text,who:CONFIG.him})); $('#jarInput').value=''; renderJarCount(); shakeJar(); }
+  catch(e){ alert("Couldn't save that. Check the connection."); }
+};
+$('#jarInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('#jarSubmit').click();});
+
+/* ─────────── voice notes ─────────── */
+let voiceNotes=[]; let vnRecorder=null, vnChunks=[], vnRecording=false;
+async function loadVoice(){ try{ voiceNotes=(await DB.all('voice')).reverse(); }catch(e){ voiceNotes=[]; } renderVoice(); }
+function renderVoice(){
+  const g=$('#voiceGrid'); if(!g)return;
+  g.innerHTML = voiceNotes.length ? voiceNotes.map(v=>`<div class="voiceCard"><div class="who">${esc(v.who)} · ${esc(v.caption||'')}</div><audio src="${esc(v.url)}" controls preload="none"></audio></div>`).join('') : '<p class="note">Nothing recorded yet.</p>';
+}
+$('#vnRecord').onclick=async()=>{
+  if(vnRecording){ vnRecorder.stop(); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    vnChunks=[];
+    vnRecorder=new MediaRecorder(stream);
+    vnRecorder.ondataavailable=e=>vnChunks.push(e.data);
+    vnRecorder.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      vnRecording=false; $('#vnRecord').innerHTML='● Record a note';
+      const blob=new Blob(vnChunks,{type:'audio/webm'});
+      const meta=await askCaption('What is this one?',true);
+      if(meta===null)return;
+      $('#vnBusy').style.display='inline';
+      try{
+        const file=new File([blob], uid()+'.webm', {type:'audio/webm'});
+        const url=await DB.upload(file);
+        const row=await DB.add({kind:'voice',caption:meta.caption,who:meta.who||CONFIG.him,url,type:'audio'});
+        voiceNotes.unshift(row); renderVoice();
+      }catch(e){ console.error(e); alert("That recording wouldn't upload. Check your connection."); }
+      $('#vnBusy').style.display='none';
+    };
+    vnRecorder.start();
+    vnRecording=true; $('#vnRecord').innerHTML='<span class="recDot"></span>Stop recording';
+  }catch(e){ alert("Couldn't access the microphone — check your browser's permission for this site."); }
+};
+
+/* ─────────── firsts & lasts ─────────── */
+let flItems=[]; let flType='first';
+async function loadFirsts(){ try{ flItems=(await DB.all('firstlast')).reverse(); }catch(e){ flItems=[]; } renderFirsts(); }
+function renderFirsts(){
+  const el=$('#flList'); if(!el)return;
+  el.innerHTML = flItems.length ? flItems.map(i=>`<div class="flRow" data-id="${i.id}"><span class="flTag ${i.type}">${i.type}</span><span class="t" style="flex:1;font-size:15px;line-height:1.5">${esc(i.caption)}</span><button class="del" aria-label="remove">×</button></div>`).join('') : '<p class="note">Nothing yet.</p>';
+  $$('#flList .del').forEach(b=>b.onclick=async()=>{
+    const id=b.closest('.flRow').dataset.id;
+    flItems=flItems.filter(x=>String(x.id)!==String(id)); renderFirsts(); try{await DB.remove(id);}catch(e){}
+  });
+}
+$('#flTypeToggle').onclick=()=>{ flType = flType==='first' ? 'last' : 'first'; $('#flTypeToggle').textContent = flType==='first'?'First':'Last'; };
+$('#flAdd').onclick=async()=>{
+  const text=$('#flInput').value.trim(); if(!text)return;
+  try{ flItems.unshift(await DB.add({kind:'firstlast',caption:text,type:flType,who:CONFIG.him})); renderFirsts(); $('#flInput').value=''; }
+  catch(e){ alert("Couldn't save that. Check the connection."); }
+};
+$('#flInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('#flAdd').click();});
+
 /* ─────────── boot ─────────── */
 $('#vaultNote').textContent = LIVE
   ? 'Photos get compressed before upload. You and I both see everything here, from anywhere.'
   : "Heads up: no shared backend yet — anything added here saves only on this device and stays under 3 MB.";
 (async function(){
   await loadLetters(); await loadList(); await loadVault(); await loadWatch();
+  await loadMoveIn(); renderTogether();
+  await loadReasons(); await loadVoice(); await loadFirsts();
   if(SP_HAS){ await handleSpotifyRedirect(); const tok=await getSpToken(); renderSpotifyUI(!!tok); }
 })();
 </script>
