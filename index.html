@@ -180,6 +180,9 @@ nav{position:fixed;bottom:0;left:0;right:0;z-index:20;display:none;flex-directio
 .jarAddRow input{flex:1}
 #reasons .pad{display:flex;flex-direction:column;align-items:center;text-align:center}
 .voiceGrid{display:flex;flex-direction:column;gap:12px;margin-top:20px;width:100%}
+.chip.on{background:var(--gold);color:#14102A;border-color:var(--gold)}
+.voiceCard .vHead{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.voiceCard .del{margin-left:auto}
 .voiceCard{background:rgba(251,246,238,.04);border:1px solid var(--line);border-radius:3px;padding:14px 16px}
 .voiceCard .who{font-family:var(--util);text-transform:uppercase;letter-spacing:.16em;font-size:10px;color:var(--gold);margin-bottom:8px}
 .voiceCard audio{width:100%}
@@ -437,6 +440,12 @@ Same rules — the specific things, not the greeting-card things.`,
     <div class="hdr"><p class="eyebrow">Say it out loud</p><h2>Voice notes.</h2>
     <p>Sometimes typing isn't it. Record something instead.</p></div>
     <div class="row" style="margin-top:16px"><button class="btn" id="vnRecord">● Record a note</button><span class="busy" id="vnBusy" style="display:none">Uploading…</span></div>
+    <div id="vnPreview" style="display:none">
+      <p class="eyebrow" style="margin:22px 0 8px">Pick a voice — it re-renders from your original take</p>
+      <div class="chips" id="vnFxChips"></div>
+      <audio id="vnPreviewAudio" controls style="width:100%;margin-top:16px"></audio>
+      <div class="row"><button class="btn" id="vnSave">Save it</button><button class="btn ghost" id="vnRedo">Throw it away</button></div>
+    </div>
     <div class="voiceGrid" id="voiceGrid"></div>
   </div>
 </section>
@@ -1052,10 +1061,126 @@ $('#jarInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('#jarSubmit')
 
 /* ─────────── voice notes ─────────── */
 let voiceNotes=[]; let vnRecorder=null, vnChunks=[], vnRecording=false;
+let vnRawBuffer=null;      // the untouched take, kept so any effect can be re-rendered from source
+let vnFx='none', vnRenderedBlob=null;
+
+const VN_FX=[
+  ['none','Just me'],['robot','Robot'],['demon','Demon'],['chipmunk','Chipmunk'],
+  ['alien','Alien'],['pirate','Pirate'],['fishbowl','Fishbowl'],['radio','Walkie'],['ghost','Ghost']
+];
+
+/* a soft-clipping curve for the grittier voices */
+function fxCurve(amount){
+  const n=1024, curve=new Float32Array(n), k=amount;
+  for(let i=0;i<n;i++){ const x=i*2/n-1; curve[i]=(1+k)*x/(1+k*Math.abs(x)); }
+  return curve;
+}
+/* Every effect is just a little Web Audio graph rendered offline, so what gets uploaded
+   already sounds like the voice — she doesn't need any of this code to hear it. */
+async function applyFx(buffer, fx){
+  const rates={demon:.72, chipmunk:1.55, pirate:.86, ghost:.92};
+  const rate=rates[fx]||1;
+  const tail=(fx==='ghost'||fx==='fishbowl')?1.2:0.25;
+  const len=Math.ceil((buffer.duration/rate + tail)*22050);
+  const ctx=new OfflineAudioContext(1, len, 22050);
+  const src=ctx.createBufferSource(); src.buffer=buffer; src.playbackRate.value=rate;
+  let node=src;
+  const chain=n=>{ node.connect(n); node=n; };
+
+  if(fx==='robot'||fx==='alien'){
+    const ring=ctx.createGain(); ring.gain.value=0;
+    const osc=ctx.createOscillator();
+    osc.type = fx==='robot' ? 'square' : 'sine';
+    osc.frequency.value = fx==='robot' ? 48 : 220;
+    const depth=ctx.createGain(); depth.gain.value=1;
+    osc.connect(depth); depth.connect(ring.gain); osc.start();
+    chain(ring);
+    if(fx==='alien'){
+      const dl=ctx.createDelay(); dl.delayTime.value=.012;
+      const lfo=ctx.createOscillator(); lfo.frequency.value=6;
+      const lg=ctx.createGain(); lg.gain.value=.006;
+      lfo.connect(lg); lg.connect(dl.delayTime); lfo.start();
+      chain(dl);
+    }
+  }
+  if(fx==='demon'||fx==='pirate'||fx==='radio'){
+    const ws=ctx.createWaveShaper();
+    ws.curve=fxCurve(fx==='demon'?9:fx==='radio'?14:4);
+    chain(ws);
+  }
+  if(fx==='radio'){
+    const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1600; bp.Q.value=3.5;
+    chain(bp);
+  }
+  if(fx==='fishbowl'){
+    const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=620; lp.Q.value=7;
+    chain(lp);
+    const dl=ctx.createDelay(); dl.delayTime.value=.055;
+    const fb=ctx.createGain(); fb.gain.value=.42;
+    dl.connect(fb); fb.connect(dl); chain(dl);
+  }
+  if(fx==='demon'){
+    const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=3200;
+    chain(lp);
+  }
+  if(fx==='ghost'){
+    const dl=ctx.createDelay(); dl.delayTime.value=.22;
+    const fb=ctx.createGain(); fb.gain.value=.45;
+    dl.connect(fb); fb.connect(dl); chain(dl);
+    const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2400;
+    chain(lp);
+  }
+  // levelled by ear and by peak measurement — ring modulation loses headroom, the bandpass eats it
+  const out=ctx.createGain();
+  out.gain.value = (fx==='robot'||fx==='alien') ? 1.45 : (fx==='radio' ? 2.4 : 1);
+  chain(out); node.connect(ctx.destination);
+  src.start();
+  return ctx.startRendering();
+}
+/* MediaRecorder can't re-encode a processed buffer, so write a small mono WAV by hand */
+function bufferToWav(buf){
+  const d=buf.getChannelData(0), n=d.length, sr=buf.sampleRate;
+  const ab=new ArrayBuffer(44+n*2), v=new DataView(ab);
+  const str=(o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); };
+  str(0,'RIFF'); v.setUint32(4,36+n*2,true); str(8,'WAVEfmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  str(36,'data'); v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){ const s=Math.max(-1,Math.min(1,d[i])); v.setInt16(44+i*2, s<0?s*0x8000:s*0x7FFF, true); }
+  return new Blob([ab],{type:'audio/wav'});
+}
+function renderFxChips(){
+  const el=$('#vnFxChips'); if(!el)return;
+  el.innerHTML=VN_FX.map(([k,label])=>`<button class="chip${k===vnFx?' on':''}" data-fx="${k}">${label}</button>`).join('');
+  el.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{ vnFx=b.dataset.fx; renderFxChips(); previewFx(); });
+}
+async function previewFx(){
+  if(!vnRawBuffer)return;
+  $('#vnPreviewAudio').removeAttribute('src');
+  try{
+    const rendered=await applyFx(vnRawBuffer, vnFx);
+    vnRenderedBlob=bufferToWav(rendered);
+    $('#vnPreviewAudio').src=URL.createObjectURL(vnRenderedBlob);
+  }catch(e){ console.error(e); alert("Couldn't apply that voice."); }
+}
+function closePreview(){
+  $('#vnPreview').style.display='none';
+  vnRawBuffer=null; vnRenderedBlob=null; vnFx='none';
+  $('#vnPreviewAudio').removeAttribute('src');
+}
 async function loadVoice(){ try{ voiceNotes=(await DB.all('voice')).reverse(); }catch(e){ voiceNotes=[]; } renderVoice(); }
 function renderVoice(){
   const g=$('#voiceGrid'); if(!g)return;
-  g.innerHTML = voiceNotes.length ? voiceNotes.map(v=>`<div class="voiceCard"><div class="who">${esc(v.who)} · ${esc(v.caption||'')}</div><audio src="${esc(v.url)}" controls preload="none"></audio></div>`).join('') : '<p class="note">Nothing recorded yet.</p>';
+  g.innerHTML = voiceNotes.length ? voiceNotes.map(v=>`<div class="voiceCard" data-id="${v.id}">
+    <div class="vHead"><div class="who">${esc(v.who)} · ${esc(v.caption||'')}${v.type&&v.type!=='audio'?' · '+esc(v.type):''}</div><button class="del" aria-label="delete">×</button></div>
+    <audio src="${esc(v.url)}" controls preload="none"></audio></div>`).join('') : '<p class="note">Nothing recorded yet.</p>';
+  g.querySelectorAll('.voiceCard .del').forEach(b=>b.onclick=async()=>{
+    const card=b.closest('.voiceCard'), id=card.dataset.id;
+    const v=voiceNotes.find(x=>String(x.id)===String(id));
+    if(!confirm(`Delete "${(v&&v.caption)||'this note'}"? It's gone for both of us.`))return;
+    voiceNotes=voiceNotes.filter(x=>String(x.id)!==String(id)); renderVoice();
+    try{ await DB.remove(id); }catch(e){ console.error(e); }
+  });
 }
 $('#vnRecord').onclick=async()=>{
   if(vnRecording){ vnRecorder.stop(); return; }
@@ -1068,20 +1193,33 @@ $('#vnRecord').onclick=async()=>{
       stream.getTracks().forEach(t=>t.stop());
       vnRecording=false; $('#vnRecord').innerHTML='● Record a note';
       const blob=new Blob(vnChunks,{type:'audio/webm'});
-      const meta=await askCaption('What is this one?',true);
-      if(meta===null)return;
-      $('#vnBusy').style.display='inline';
       try{
-        const file=new File([blob], uid()+'.webm', {type:'audio/webm'});
-        const url=await DB.upload(file);
-        const row=await DB.add({kind:'voice',caption:meta.caption,who:meta.who||CONFIG.him,url,type:'audio'});
-        voiceNotes.unshift(row); renderVoice();
-      }catch(e){ console.error(e); alert("That recording wouldn't upload. Check your connection."); }
-      $('#vnBusy').style.display='none';
+        const ac=new (window.AudioContext||window.webkitAudioContext)();
+        vnRawBuffer=await ac.decodeAudioData(await blob.arrayBuffer());
+        ac.close();
+      }catch(e){ console.error(e); alert("Couldn't read that recording."); return; }
+      vnFx='none'; renderFxChips();
+      $('#vnPreview').style.display='block';
+      await previewFx();
     };
     vnRecorder.start();
     vnRecording=true; $('#vnRecord').innerHTML='<span class="recDot"></span>Stop recording';
   }catch(e){ alert("Couldn't access the microphone — check your browser's permission for this site."); }
+};
+$('#vnRedo').onclick=closePreview;
+$('#vnSave').onclick=async()=>{
+  if(!vnRenderedBlob)return;
+  const meta=await askCaption('What is this one?',true);
+  if(meta===null)return;
+  $('#vnBusy').style.display='inline';
+  try{
+    const file=new File([vnRenderedBlob], uid()+'.wav', {type:'audio/wav'});
+    const url=await DB.upload(file);
+    const label=(VN_FX.find(f=>f[0]===vnFx)||[])[1];
+    const row=await DB.add({kind:'voice',caption:meta.caption,who:meta.who||CONFIG.him,url,type:vnFx==='none'?'audio':label});
+    voiceNotes.unshift(row); renderVoice(); closePreview();
+  }catch(e){ console.error(e); alert("That recording wouldn't upload. Check your connection."); }
+  $('#vnBusy').style.display='none';
 };
 
 /* ─────────── firsts & lasts ─────────── */
