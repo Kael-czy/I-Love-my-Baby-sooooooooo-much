@@ -37,6 +37,17 @@ label.f span{font-family:var(--util);text-transform:uppercase;letter-spacing:.2e
 .btn{display:inline-flex;align-items:center;gap:10px;background:var(--gold);color:#14102A;font-family:var(--util);text-transform:uppercase;letter-spacing:.18em;font-size:13px;font-weight:600;padding:13px 22px;border-radius:2px}
 .btn.ghost{background:none;color:var(--cream);border:1px solid var(--line)}
 .btn:active{transform:translateY(1px)}
+#intro{align-items:center;justify-content:center;padding:24px;text-align:center}
+#intro.leaving{animation:introOut .55s ease forwards}
+@keyframes introOut{to{opacity:0;transform:scale(1.06)}}
+.envelope{position:relative;width:min(72vw,250px);height:min(48vw,166px);background:linear-gradient(160deg,#241A3C,#2E1E3F);border:1px solid var(--line);border-radius:5px;box-shadow:0 26px 60px rgba(0,0,0,.55);animation:envFloat 3.6s ease-in-out infinite}
+@keyframes envFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.envFlap{position:absolute;top:0;left:0;right:0;height:0;border-left:min(36vw,125px) solid transparent;border-right:min(36vw,125px) solid transparent;border-top:min(28vw,96px) solid rgba(251,246,238,.09);border-radius:5px 5px 0 0}
+.envFront{position:absolute;inset:0;border-radius:5px;box-shadow:inset 0 1px 0 rgba(251,246,238,.07)}
+.envSeal{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FF6B85,#C4293F);display:grid;place-items:center;font-family:var(--display);font-style:italic;font-size:23px;color:#FBF6EE;box-shadow:0 0 26px rgba(255,51,85,.5);z-index:2}
+.introName{font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(30px,9vw,52px);margin:0;line-height:1.05}
+.introHint{font-family:var(--util);text-transform:uppercase;letter-spacing:.28em;font-size:11px;color:var(--muted);margin:20px 0 0;animation:hintPulse 2.4s ease-in-out infinite}
+@keyframes hintPulse{0%,100%{opacity:.4}50%{opacity:1}}
 #cover{align-items:center;justify-content:center;padding:24px}
 .pass{width:min(460px,92vw);background:linear-gradient(160deg,#1C1533 0%,#241A3C 60%,#2E1E3F 100%);border:1px solid var(--line);border-radius:4px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(251,246,238,.06);animation:rise .9s cubic-bezier(.2,.8,.2,1) both}
 @keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
@@ -113,18 +124,23 @@ nav{position:fixed;bottom:0;left:0;right:0;z-index:20;display:none;flex-directio
 @media(min-width:720px){.heartRow{flex-direction:row;justify-content:center;gap:54px}}
 .heartStatement{max-width:380px;text-align:center}
 @media(min-width:720px){.heartStatement{text-align:left}}
-.heartStatement p{font-family:var(--display);font-style:normal;font-weight:500;font-size:clamp(24px,5.6vw,38px);line-height:1.3;color:var(--cream);margin:0;text-shadow:0 0 26px rgba(255,51,85,.35)}
-.heartCol{display:flex;flex-direction:column;align-items:center;gap:20px;margin-top:30px}
-@media(min-width:720px){.heartCol{margin-top:0}}
-.heartStage{position:relative;width:min(80vw,340px);height:min(80vw,340px);flex:0 0 auto}
-.heartShape{position:absolute;inset:0;transform:rotate(-45deg);background:#FF3355;box-shadow:0 0 90px rgba(255,51,85,.55),0 0 160px rgba(255,51,85,.32);animation:heartbeat 1.15s ease-in-out infinite}
-.heartShape::before,.heartShape::after{content:"";position:absolute;width:100%;height:100%;border-radius:50%;background:inherit}
-.heartShape::before{top:-50%;left:0}
-.heartShape::after{top:0;left:50%}
-@keyframes heartbeat{0%,28%,100%{transform:rotate(-45deg) scale(1)}14%{transform:rotate(-45deg) scale(1.18)}42%{transform:rotate(-45deg) scale(1.1)}56%{transform:rotate(-45deg) scale(1)}}
-.heartName{text-align:center;padding:0 10px}
-.heartName span{font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(24px,7vw,38px);line-height:1.05;color:#C9A6FF;animation:glowText 2.6s ease-in-out infinite}
-@keyframes glowText{0%,100%{text-shadow:0 0 8px rgba(201,166,255,.55),0 0 18px rgba(159,108,255,.55),0 0 32px rgba(159,108,255,.35)}50%{text-shadow:0 0 18px rgba(201,166,255,.95),0 0 38px rgba(159,108,255,.95),0 0 66px rgba(159,108,255,.75)}}
+.heartStatement p{font-family:var(--display);font-style:normal;font-weight:500;font-size:clamp(22px,5.2vw,34px);line-height:1.35;color:#C9A6FF;margin:0;text-shadow:0 0 24px rgba(159,108,255,.45)}
+/* Heart drawn out of A's. Replaces the old rotated-square CSS hack, which rendered ~1.5x its own
+   box and swallowed the name and the statement text sitting next to it. Text stays in its box. */
+.heartStage{position:relative;display:inline-block;flex:0 0 auto;margin-top:26px}
+@media(min-width:720px){.heartStage{margin-top:0}}
+/* Each row is centred by CSS rather than padded with leading spaces — the space glyph is narrower
+   than "A" in most monospace stacks, which made every row drift right and the heart lean. */
+.heartA{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Courier New",monospace;font-size:clamp(12px,3.4vw,20px);line-height:1.02;letter-spacing:.08em;color:#FF3355;margin:0;text-align:center;user-select:none;text-shadow:0 0 10px rgba(255,51,85,.75),0 0 26px rgba(255,51,85,.45),0 0 52px rgba(255,51,85,.25);animation:heartbeat 1.15s ease-in-out infinite;transform-origin:50% 50%}
+.heartA i{display:block;white-space:pre;font-style:normal}
+@keyframes heartbeat{0%,28%,100%{transform:scale(1)}14%{transform:scale(1.07)}42%{transform:scale(1.035)}56%{transform:scale(1)}}
+/* Her name scattered across the whole screen behind the heart — every one a different font, size and colour. */
+#heart{position:relative;overflow:hidden}
+#heart .pad{position:relative;z-index:1}
+.nameScatter{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:grid;padding:14px 10px 74px}
+.nameScatter span{display:flex;align-items:center;justify-content:center;overflow:visible}
+.nameScatter b{display:inline-block;white-space:nowrap;line-height:1;font-weight:inherit;transform:translate(var(--dx),var(--dy)) rotate(var(--rot));animation:drift 9s ease-in-out infinite alternate}
+@keyframes drift{0%{opacity:var(--o)}100%{opacity:calc(var(--o) * 1.65)}}
 .heartNote{max-width:360px;margin-top:38px}
 .cdGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 10px;max-width:420px;margin:26px auto 0}
 .cdCell{background:rgba(251,246,238,.04);border:1px solid var(--line);border-radius:4px;padding:16px 6px}
@@ -169,6 +185,11 @@ nav{position:fixed;bottom:0;left:0;right:0;z-index:20;display:none;flex-directio
 const CONFIG = {
 
   her:  "Azanizzzzz",
+  herEmoji: "\u{1FAB0}",   // shows up next to her name on the heart tab
+
+  // What gets scattered across the heart tab. Add, remove or reorder freely.
+  petNames: ["Azania","Azaniz","Azanizzzzz","babyyyy","baeee","My love","darling","gorgeous","Pretty"],
+
   him:  "Cozzyyyy",
   from: "NBO",
   to:   "MRU",
@@ -228,7 +249,18 @@ Same rules — the specific things, not the greeting-card things.`,
 </script>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
-<section class="screen on" id="cover">
+<section class="screen on" id="intro">
+  <button class="envelope" id="introOpen" aria-label="Open">
+    <span class="envFlap"></span>
+    <span class="envSeal">A</span>
+    <span class="envFront"></span>
+  </button>
+  <p class="eyebrow" style="margin:34px 0 6px">For</p>
+  <h1 class="introName" id="introName">Azanizzzzz</h1>
+  <p class="introHint">Tap to open</p>
+</section>
+
+<section class="screen" id="cover">
   <div class="pass">
     <div class="top">
       <div><p class="eyebrow" style="margin:0 0 4px">Boarding pass</p><p class="eyebrow gold" style="margin:0" id="cvDate">—</p></div>
@@ -321,14 +353,12 @@ Same rules — the specific things, not the greeting-card things.`,
 </section>
 
 <section class="screen" id="heart">
+  <div class="nameScatter" id="nameScatter" aria-hidden="true"></div>
   <div class="pad">
     <p class="eyebrow">No function. Just this.</p>
     <div class="heartRow">
-      <div class="heartCol">
-        <div class="heartName"><span id="heartNameText">Azanizzzzz</span></div>
-        <div class="heartStage">
-          <div class="heartShape"></div>
-        </div>
+      <div class="heartStage">
+<div class="heartA" aria-hidden="true"><i>AAAAAA   AAAAAA</i><i>AAAAAAAAAAAAAAAAA</i><i>AAAAAAAAAAAAAAAAAAA</i><i>AAAAAAAAAAAAAAAAAAAAA</i><i>AAAAAAAAAAAAAAAAAAAAA</i><i>AAAAAAAAAAAAAAAAAAAAA</i><i>AAAAAAAAAAAAAAAAAAA</i><i>AAAAAAAAAAAAAAAAA</i><i>AAAAAAAAAAAAAAAAA</i><i>AAAAAAAAAAAAAAA</i><i>AAAAAAAAAAAAA</i><i>AAAAAAAAAAA</i><i>AAAAAAAAA</i><i>AAAAAAA</i><i>AAAAA</i><i>AAA</i></div>
       </div>
       <div class="heartStatement"><p>How my heart beats for you....<br>you'll forever stay here.</p></div>
     </div>
@@ -551,10 +581,19 @@ function show(id){
   window.scrollTo(0,0);
   if(id==='recap')startRecap();
   if(id==='vault')renderVault();
+  if(id==='heart' && window.buildScatter) requestAnimationFrame(window.buildScatter);
   setMood(id);
 }
 $$('#navGroups button').forEach(b=>b.onclick=()=>show(GROUPS[b.dataset.group][0][0]));
 $('#openBtn').onclick=()=>{musicOn();$('#nav').style.display='flex';show('recap');};
+// intro -> boarding pass. Deliberately not part of show(), so no nav appears yet.
+$('#introOpen').onclick=()=>{
+  const intro=$('#intro');
+  intro.classList.add('leaving');
+  setTimeout(()=>{ intro.classList.remove('on','leaving'); $('#cover').classList.add('on'); window.scrollTo(0,0); },520);
+};
+$('#introName').textContent=CONFIG.her;
+$('.envSeal').textContent=(CONFIG.her||'A').trim().charAt(0).toUpperCase();
 
 /* ─────────── cover ─────────── */
 $('#cvHer').textContent=CONFIG.her;
@@ -564,7 +603,64 @@ $('#cvLine').textContent=CONFIG.coverLine;
 $('#cvDate').textContent=CONFIG.date?new Date(CONFIG.date+'T12:00').toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}).toUpperCase():'DEPARTURE';
 $('#ltHimName').textContent=CONFIG.him;
 $('#ltHerName').textContent=CONFIG.her;
-$('#heartNameText').textContent=CONFIG.her;
+/* ─────────── her name, scattered ─────────── */
+(function(){
+  const wrap=$('#nameScatter'); if(!wrap)return;
+  const FONTS=[
+    'var(--display)','var(--util)','var(--body)',
+    'Georgia,"Times New Roman",serif','ui-monospace,Menlo,Consolas,monospace',
+    '"Trebuchet MS",sans-serif','"Palatino Linotype","Book Antiqua",serif',
+    '"Gill Sans","Gill Sans MT",Calibri,sans-serif','"Courier New",monospace','cursive'
+  ];
+  const COLORS=['#FBF6EE','#F0B429','#F2A0B4','#C9A6FF','#FF6B85','#9FE7E3','#FF3355','#B9A6FF','#FFD9A0'];
+  const STYLES=['normal','italic'];
+  const WEIGHTS=['300','300','400','400','500'];   // kept light — these are meant to sink into the background
+  const WORDS=(CONFIG.petNames&&CONFIG.petNames.length)?CONFIG.petNames:[CONFIG.her];
+  // walk the list with a stride coprime to its length, so every word gets used before any repeats
+  const gcd=(a,b)=>b?gcd(b,a%b):a;
+  let STRIDE=1; for(let s=Math.max(2,Math.floor(WORDS.length/2));s<WORDS.length+3;s++){ if(gcd(s,WORDS.length)===1){STRIDE=s;break;} }
+  // One name per grid cell. CSS grid means they can never overlap each other, whatever the font or
+  // screen size. Then any cell that would collide with the heart or the line beside it is emptied,
+  // and whatever is left is shrunk until it fits inside its own cell.
+  window.buildScatter=function(){
+    if(!$('#heart').classList.contains('on')) return;   // rects are all zero while the tab is hidden
+    const narrow = innerWidth < 700;
+    const COLS = narrow ? 3 : 5;
+    const ROWS = narrow ? 9 : 6;
+    wrap.style.gridTemplateColumns=`repeat(${COLS},1fr)`;
+    wrap.style.gridTemplateRows=`repeat(${ROWS},1fr)`;
+    let html='';
+    for(let i=0;i<COLS*ROWS;i++){
+      const size=(13+((i*37)%26)).toFixed(0);
+      const op=(0.16+((i*23)%22)/100).toFixed(2);
+      // deterministic pseudo-random slant and nudge — messy to look at, identical on every reload
+      const rot=(((i*67)%25)-12).toFixed(1);
+      const dx=(((i*43)%17)-8).toFixed(0);
+      const dy=(((i*29)%13)-6).toFixed(0);
+      const word=WORDS[(i*STRIDE)%WORDS.length];
+      const txt=esc(word + (i%5===1 ? CONFIG.herEmoji : ''));
+      html+=`<span style="--o:${op};--rot:${rot}deg;--dx:${dx}px;--dy:${dy}px;font-family:${FONTS[i%FONTS.length]};font-size:${size}px;font-style:${STYLES[i%STYLES.length]};font-weight:${WEIGHTS[i%WEIGHTS.length]};color:${COLORS[(i*3)%COLORS.length]};opacity:${op};"><b style="animation-delay:${(i%7)*0.9}s;animation-duration:${7+(i%6)}s">${txt}</b></span>`;
+    }
+    wrap.innerHTML=html;
+
+    const PAD=8;
+    const blockers=[...$('#heart').querySelectorAll('.heartStage,.heartStatement,.heartNote,.eyebrow')]
+      .map(e=>e.getBoundingClientRect()).filter(b=>b.width>0);
+    wrap.querySelectorAll('span').forEach(el=>{
+      const inner=el.firstElementChild; if(!inner)return;
+      const cell=el.getBoundingClientRect();
+      // shrink against the ROTATED box, so slanted names still can't reach into a neighbouring cell
+      let fs=parseFloat(getComputedStyle(el).fontSize), guard=0;
+      let b=inner.getBoundingClientRect();
+      while((b.width>cell.width-2 || b.height>cell.height-2) && fs>7 && guard++<50){
+        fs-=1; el.style.fontSize=fs+'px'; b=inner.getBoundingClientRect();
+      }
+      const hits=blockers.some(k=> b.left < k.right+PAD && k.left-PAD < b.right && b.top < k.bottom+PAD && k.top-PAD < b.bottom);
+      if(hits) el.innerHTML='';
+    });
+  };
+  let rt; addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(window.buildScatter,250);});
+})();
 
 /* ─────────── recap ─────────── */
 let rIdx=-1,rTimer=null,flip=false;
