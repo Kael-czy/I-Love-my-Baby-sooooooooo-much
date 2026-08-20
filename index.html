@@ -131,9 +131,24 @@ nav{position:fixed;bottom:0;left:0;right:0;z-index:20;display:none;flex-directio
 @media(min-width:720px){.heartStage{margin-top:0}}
 /* Each row is centred by CSS rather than padded with leading spaces — the space glyph is narrower
    than "A" in most monospace stacks, which made every row drift right and the heart lean. */
-.heartA{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Courier New",monospace;font-size:clamp(12px,3.4vw,20px);line-height:1.02;letter-spacing:.08em;color:#FF3355;margin:0;text-align:center;user-select:none;text-shadow:0 0 10px rgba(255,51,85,.75),0 0 26px rgba(255,51,85,.45),0 0 52px rgba(255,51,85,.25);animation:heartbeat 1.15s ease-in-out infinite;transform-origin:50% 50%}
+.heartA{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Courier New",monospace;font-size:clamp(12px,3.4vw,20px);line-height:1.02;letter-spacing:.08em;color:#FF3355;margin:0;text-align:center;user-select:none;animation:heartbeat 1s cubic-bezier(.22,.68,.35,1) infinite;transform-origin:50% 62%}
 .heartA i{display:block;white-space:pre;font-style:normal}
-@keyframes heartbeat{0%,28%,100%{transform:scale(1)}14%{transform:scale(1.07)}42%{transform:scale(1.035)}56%{transform:scale(1)}}
+/* A real lub-dub: a hard contraction, a smaller second one, then a rest before the next beat.
+   The glow swells with each squeeze so it reads as a pulse and not just a resize. */
+@keyframes heartbeat{
+  0%   {transform:scale(1);      text-shadow:0 0 10px rgba(255,51,85,.7),0 0 26px rgba(255,51,85,.4),0 0 52px rgba(255,51,85,.2)}
+  9%   {transform:scale(1.17);   text-shadow:0 0 16px rgba(255,51,85,1),0 0 42px rgba(255,51,85,.75),0 0 88px rgba(255,51,85,.45)}
+  17%  {transform:scale(1.03);   text-shadow:0 0 11px rgba(255,51,85,.75),0 0 28px rgba(255,51,85,.45),0 0 56px rgba(255,51,85,.24)}
+  26%  {transform:scale(1.12);   text-shadow:0 0 15px rgba(255,51,85,.95),0 0 38px rgba(255,51,85,.68),0 0 78px rgba(255,51,85,.4)}
+  38%,100%{transform:scale(1);   text-shadow:0 0 10px rgba(255,51,85,.7),0 0 26px rgba(255,51,85,.4),0 0 52px rgba(255,51,85,.2)}
+}
+/* the line beside it breathes on the same clock, a beat behind */
+.heartStatement p{animation:statementPulse 1s ease-in-out infinite}
+@keyframes statementPulse{
+  0%,100%{text-shadow:0 0 24px rgba(159,108,255,.4)}
+  12%    {text-shadow:0 0 34px rgba(159,108,255,.85),0 0 60px rgba(159,108,255,.35)}
+  30%    {text-shadow:0 0 27px rgba(159,108,255,.55)}
+}
 /* Her name scattered across the whole screen behind the heart — every one a different font, size and colour. */
 #heart{position:relative;overflow:hidden}
 #heart .pad{position:relative;z-index:1}
@@ -645,7 +660,12 @@ $('#ltHerName').textContent=CONFIG.her;
 
     const PAD=8;
     const blockers=[...$('#heart').querySelectorAll('.heartStage,.heartStatement,.heartNote,.eyebrow')]
-      .map(e=>e.getBoundingClientRect()).filter(b=>b.width>0);
+      .map(e=>{
+        const b=e.getBoundingClientRect();
+        // the heart swells to 1.17 at the peak of a beat — reserve that room, not just its resting size
+        const g=e.classList.contains('heartStage')?0.10:0;
+        return {left:b.left-b.width*g, right:b.right+b.width*g, top:b.top-b.height*g, bottom:b.bottom+b.height*g, width:b.width};
+      }).filter(b=>b.width>0);
     wrap.querySelectorAll('span').forEach(el=>{
       const inner=el.firstElementChild; if(!inner)return;
       const cell=el.getBoundingClientRect();
